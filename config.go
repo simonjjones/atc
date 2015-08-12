@@ -14,6 +14,7 @@ type Config struct {
 	Groups    GroupConfigs    `yaml:"groups" json:"groups" mapstructure:"groups"`
 	Resources ResourceConfigs `yaml:"resources" json:"resources" mapstructure:"resources"`
 	Jobs      JobConfigs      `yaml:"jobs" json:"jobs" mapstructure:"jobs"`
+	Plugins   PluginConfigs   `yaml:"plugins" json:"plugins" mapstructure:"plugins"`
 }
 
 type GroupConfig struct {
@@ -56,6 +57,13 @@ type JobConfig struct {
 
 	Plan PlanSequence `yaml:"plan,omitempty" json:"plan,omitempty" mapstructure:"plan"`
 }
+
+type PluginConfig struct {
+	Name  string `yaml:"name" json:"name" mapstructure:"name"`
+	Image string `yaml:"image" json:"image" mapstructure:"image"`
+}
+
+type PluginConfigs []PluginConfig
 
 func (config JobConfig) IsSerial() bool {
 	return config.Serial || len(config.SerialGroups) > 0
@@ -314,6 +322,16 @@ func (jobs JobConfigs) Lookup(name string) (JobConfig, bool) {
 	}
 
 	return JobConfig{}, false
+}
+
+func (plugins PluginConfigs) Lookup(name string) (PluginConfig, bool) {
+	for _, plugin := range plugins {
+		if plugin.Name == name {
+			return plugin, true
+		}
+	}
+
+	return PluginConfig{}, false
 }
 
 func (config Config) JobIsPublic(jobName string) (bool, error) {

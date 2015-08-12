@@ -122,6 +122,8 @@ func (s *Server) SaveConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, _ = s.saveNewPlugins(config)
+
 	session.Info("saved")
 
 	if created {
@@ -266,4 +268,22 @@ func sanitize(root interface{}) (interface{}, error) {
 	}
 
 	return nil, errors.New(fmt.Sprintf("unknown type (%s) during sanitization: %#v\n", reflect.TypeOf(root).String(), root))
+}
+
+func (s *Server) saveNewPlugins(c atc.Config) (bool, error) {
+	s.logger.Debug("saveNewPlugins called", lager.Data{"config": c})
+	workerResources := make([]atc.WorkerResourceType, len(c.Plugins))
+	for i := range c.Plugins {
+		workerResources[i] = atc.WorkerResourceType{
+			Type:  c.Plugins[i].Name,
+			Image: c.Plugins[i].Image,
+		}
+	}
+	s.logger.Debug("workerResources generated", lager.Data{"resources": workerResources})
+	success, err := s.workerClient.AddResources(workerResources)
+	if err != nil {
+		s.logger.Error("error wasn't nil", lager.Data{"error": err})
+		return false, err
+	}
+	return success, nil
 }

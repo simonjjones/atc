@@ -14,6 +14,7 @@ type InvalidConfigError struct {
 	GroupsErr    error
 	ResourcesErr error
 	JobsErr      error
+	PluginsErr   error
 }
 
 func (err InvalidConfigError) Error() string {
@@ -49,8 +50,9 @@ func ValidateConfig(c atc.Config) error {
 	groupsErr := validateGroups(c)
 	resourcesErr := validateResources(c)
 	jobsErr := validateJobs(c)
+	pluginsErr := validatePlugins(c)
 
-	if groupsErr == nil && resourcesErr == nil && jobsErr == nil {
+	if groupsErr == nil && resourcesErr == nil && jobsErr == nil && pluginsErr == nil {
 		return nil
 	}
 
@@ -58,6 +60,7 @@ func ValidateConfig(c atc.Config) error {
 		GroupsErr:    groupsErr,
 		ResourcesErr: resourcesErr,
 		JobsErr:      jobsErr,
+		PluginsErr:   pluginsErr,
 	}
 }
 
@@ -552,4 +555,36 @@ func compositeErr(errorMessages []string) error {
 	}
 
 	return errors.New(strings.Join(errorMessages, "\n"))
+}
+
+func validatePlugins(c atc.Config) error {
+	errorMessages := []string{}
+	names := map[string]int{}
+
+	for i, plugin := range c.Plugins {
+		var identifier string
+		if plugin.Name == "" {
+			identifier = fmt.Sprintf("plugins[%d]", i)
+		} else {
+			identifier = fmt.Sprintf("plugins.%s", plugin.Name)
+		}
+
+		if other, exists := names[plugin.Name]; exists {
+			errorMessages = append(errorMessages,
+				fmt.Sprintf(
+					"plugins[%d] and plugins[%d] have the same name ('%s')",
+					other, i, plugin.Name))
+		} else if plugin.Name != "" {
+			names[plugin.Name] = i
+		}
+
+		if plugin.Name == "" {
+			errorMessages = append(errorMessages, identifier+" has no name")
+		}
+
+		if plugin.Image == "" {
+			errorMessages = append(errorMessages, identifier+" has no image")
+		}
+	}
+	return compositeErr(errorMessages)
 }

@@ -182,6 +182,26 @@ func (worker *gardenWorker) Description() string {
 	return strings.Join(messages, ", ")
 }
 
+func (worker *gardenWorker) AddResources(newResources []atc.WorkerResourceType) (bool, error) {
+	added_or_modified_resource := false
+	for _, resource := range newResources {
+		found_resource := false
+		for _, existing_resource := range worker.resourceTypes {
+			if existing_resource.Type == resource.Type {
+				if existing_resource.Image != resource.Image {
+					existing_resource.Image = resource.Image
+					added_or_modified_resource = true
+				}
+				found_resource = true
+			}
+		}
+		if !found_resource {
+			newResources = append(newResources, resource)
+		}
+	}
+	return added_or_modified_resource, nil
+}
+
 type gardenWorkerContainer struct {
 	garden.Container
 

@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/concourse/atc"
 )
 
 //go:generate counterfeiter . WorkerProvider
@@ -146,6 +148,38 @@ func (pool *Pool) LookupContainer(id Identifier) (Container, error) {
 
 		return nil, MultipleContainersError{Handles: handles}
 	}
+}
+
+func (pool *Pool) AddResources(newResources []atc.WorkerResourceType) (bool, error) {
+	workers, err := pool.provider.Workers()
+
+	if err != nil {
+		return false, err
+	}
+
+	if len(workers) == 0 {
+		return false, ErrNoWorkers
+	}
+
+	wg := new(sync.WaitGroup)
+	wg.Add(len(workers))
+
+	successes := 0
+
+	for _, worker := range workers {
+		go func(worker Worker) {
+			defer wg.Done()
+
+			response, _ := worker.AddResources(newResources)
+			if response {
+				successes++
+			}
+		}(worker)
+	}
+
+	wg.Wait()
+
+	return successes > 0, nil
 }
 
 type byActiveContainers []Worker

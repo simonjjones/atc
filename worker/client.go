@@ -15,6 +15,7 @@ import (
 type Client interface {
 	CreateContainer(Identifier, ContainerSpec) (Container, error)
 	LookupContainer(Identifier) (Container, error)
+	AddResources([]atc.WorkerResourceType) (bool, error)
 }
 
 //go:generate counterfeiter . Container

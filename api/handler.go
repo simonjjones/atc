@@ -78,7 +78,7 @@ func NewHandler(
 
 	pipelineServer := pipelineserver.NewServer(logger, pipelinesDB)
 
-	configServer := configserver.NewServer(logger, configDB, configValidator)
+	configServer := configserver.NewServer(logger, configDB, configValidator, workerClient)
 
 	workerServer := workerserver.NewServer(logger, workerDB)
 
